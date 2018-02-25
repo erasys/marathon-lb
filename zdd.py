@@ -612,7 +612,7 @@ def prepare_deploy(args, previous_deploys, app):
 
         next_colour = select_next_colour(last_deploy)
         next_port = select_next_port(last_deploy)
-        deployment_target_instances = last_deploy['instances']
+        deployment_target_instances = app['instances']
         if args.new_instances > deployment_target_instances:
             args.new_instances = deployment_target_instances
         if args.new_instances and args.new_instances > 0:
