@@ -14,6 +14,8 @@ from datetime import datetime
 from collections import namedtuple
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import six.moves.urllib as urllib
 
 from common import (get_marathon_auth_params, set_logging_args,
@@ -61,6 +63,15 @@ def query_yes_no(question, default="yes"):
         else:
             sys.stdout.write("Please respond with 'yes' or 'no' "
                              "(or 'y' or 'n').\n")
+
+
+def retry_requests(retries=3):
+    session = requests.Session()
+    retry = Retry(total=retries, read=retries, connect=retries)
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
+    return session
 
 
 def marathon_get_request(args, path):
@@ -112,7 +123,7 @@ def get_marathon_lb_urls(args):
 
 def fetch_haproxy_pids(haproxy_url):
     try:
-        response = requests.get(haproxy_url + "/_haproxy_getpids")
+        response = retry_requests().get(haproxy_url + "/_haproxy_getpids")
         response.raise_for_status()
     except requests.exceptions.RequestException:
         logger.exception("Caught exception when retrieving HAProxy"
@@ -146,7 +157,7 @@ def any_marathon_lb_reloading(marathon_lb_urls):
 
 def fetch_haproxy_stats(haproxy_url):
     try:
-        response = requests.get(haproxy_url + "/haproxy?stats;csv")
+        response = retry_requests().get(haproxy_url + "/haproxy?stats;csv")
         response.raise_for_status()
     except requests.exceptions.RequestException:
         logger.exception("Caught exception when retrieving HAProxy"
